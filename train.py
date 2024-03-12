@@ -111,8 +111,8 @@ def main(cfg):
     aug_rate = cfg['dataset_config']['aug_rate']
     output_save_dir = cfg['dataset_config']['save_dir']
 
-    train_dataset = Data_Classifier(train_path, ch, input_size=input_size)
-    val_dataset = Data_Classifier(val_path, ch, input_size=input_size)
+    train_dataset = Data_Classifier(train_path, ch, input_size=input_size, augmentation = cfg['dataset_config']['augmentation'])
+    val_dataset = Data_Classifier(val_path, ch, input_size=input_size, augmentation = cfg['dataset_config']['augmentation'])
     print('Train set size:', len(train_dataset))
     print('Val set size:', len(val_dataset))
 

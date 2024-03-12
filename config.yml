@@ -1,9 +1,9 @@
 model_config:
   model: InceptionV3 #ResNet50, InceptionV3, DenseNet121
-  initial_filter_size: [64]
+  initial_filter_size: [32]
   kernel: [3]
   drop_out_rate: [0.2]
-  input_size: [800, 800] #h, w
+  input_size: [400, 640] #h, w
   channel: 1
   num_class: 2
   attention: False 
@@ -13,15 +13,16 @@ train_config:
   optimizer: Adam
   lr_rate: [0.01]
   weight_decay: [0.0001]
-  batch_size: [16]
+  batch_size: [8]
   epochs: 200
   num_workers: 20
   use_cuda: True
   seed: 35
 dataset_config:
-  train_path: '/kuacc/users/ocaki13/hpc_run/ultrasoundClassification/fold1/train'
-  val_path: '/kuacc/users/ocaki13/hpc_run/ultrasoundClassification/fold1/val'
-  test_path: '/kuacc/users/ocaki13/hpc_run/ultrasoundClassification/fold1/test'
+  train_path: '../3folddatasett_copy/fold1/train/'
+  val_path: '../3folddatasett_copy/fold1/val/'
+  test_path: '../3folddatasett_copy/fold1/test/'
+  augmentation: False
   aug_rate: [0]
   save_dir: classifierExp1Sgd_incept
   class_names: ['normal','anormal']
