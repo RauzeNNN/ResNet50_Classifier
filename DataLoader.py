@@ -9,7 +9,7 @@ import random
 import torchvision.transforms.functional as TF
 from scipy import ndimage
 from scipy.ndimage.interpolation import zoom
-
+import glob
 image_ext = ['.bmp', '.png', '.jpg', '.tiff', '.tif', '.PNG']
 
 
@@ -27,29 +27,36 @@ def random_rotate(image):
     return image
 
 class Data_Classifier(Dataset):
-    def __init__(self, data_path, ch=1, input_size=(512, 512), augmentation=False):
+    def __init__(self, data_path, labels_map, ch=1, input_size=(512, 512), augmentation=False):
         super(Data_Classifier, self).__init__()
-        self.image_list, self.label_list = self.get_data(data_path)
         self.channel = ch
         self.augmentation = augmentation
-        self.height = input_size[0]
-        self.width = input_size[1]
+        self.output_size = input_size
+        self.class_list = []
+        for lbl in labels_map:
+            self.class_list.append(labels_map[lbl]) 
+        print('Class list:')
+        print(self.class_list)
+        self.image_list, self.label_list = self.get_data(data_path)
+
+            
+        
 
     def transform_mask(self, image):
-
-        if random.random() > 0.5:
-            image = random_rot_flip(image)
-        elif random.random() > 0.5:
-            image = random_rotate(image)
+        if self.augmentation == True:
+            if random.random() > 0.5:
+                image = random_rot_flip(image)
+            elif random.random() > 0.5:
+                image = random_rotate(image)
 
         if len(image.shape)==2:
-            y, x = image.shape
-            if x != self.width or y != self.height:
-                image = zoom(image, (self.width / x, self.height / y), order=3)  # why not 3?
+            h, w = image.shape
+            if h != self.output_size[0] or w != self.output_size[1]:
+                image = zoom(image, (self.output_size[0] / h, self.output_size[1] / w), order=3)  # why not 3?
         else:
-            y, x, c = image.shape
-            if x != self.width or y != self.height:
-                image = zoom(image, (self.width / x, self.height / y,1), order=3)  # why not 3?
+            h, w, c = image.shape
+            if h != self.output_size[0] or w != self.output_size[1]:
+                image = zoom(image, (self.output_size[0] / h, self.output_size[1] / w,1), order=3)  # why not 3?
             
         #z normalizization
         mean3d = np.mean(image, axis=(0,1))
@@ -89,17 +96,15 @@ class Data_Classifier(Dataset):
     def get_data(self, path):
         image_paths = []
         labels = []
-        class_list = self.natural_sort(os.listdir(path))
-        print(class_list)
         
         for maindir, subdir, file_name_list in os.walk(path):
             for filename in file_name_list:
                 apath = os.path.join(maindir, filename)
                 ext = os.path.splitext(apath)[1]
-                if ext in image_ext and '_pred' not in filename:
+                if ext in image_ext and '_label' not in filename:
                     label = maindir.split('/')[-1]
-                    label_idx = class_list.index(label)
-                    label_arr = (np.arange(len(class_list)) ==
+                    label_idx = self.class_list.index(label)
+                    label_arr = (np.arange(len(self.class_list)) ==
                                     label_idx).astype(np.float32)
                     image_paths.append(apath)
                     labels.append(label_arr)

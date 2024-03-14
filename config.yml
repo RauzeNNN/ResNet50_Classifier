@@ -25,7 +25,7 @@ dataset_config:
   augmentation: False
   aug_rate: [0]
   save_dir: classifierExp1Sgd_incept
-  class_names: ['normal','anormal']
+  class_names: ['control','RD']
 resume:
   flag: False
   path: exp3/models/last_epoch.pt

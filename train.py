@@ -35,9 +35,10 @@ def seed_everything(seed):
     torch.backends.cudnn.benchmark = False
 
 
-def check_input(dataloaders, titles=["Input", 'Target']):
+
+def check_input(dataloaders, labels_map, titles=["Input", 'Target']):
     train_loader = dataloaders['train']
-    val_loader = dataloaders['val']
+    val_loader = dataloaders['val'] 
 
     train_batch = next(iter(train_loader))
     img, label, _ = train_batch
@@ -49,10 +50,6 @@ def check_input(dataloaders, titles=["Input", 'Target']):
     print('val image shape:', img.shape)
     print('val label shape:', label.shape)
 
-    labels_map = {
-        0: 'control',
-        1: 'retinal detachment',
-    }
     figure = plt.figure(figsize=(24, 12))
     cols, rows = 3, 2
     train_loader = iter(train_loader)
@@ -110,9 +107,14 @@ def main(cfg):
     val_path = cfg['dataset_config']['val_path']
     aug_rate = cfg['dataset_config']['aug_rate']
     output_save_dir = cfg['dataset_config']['save_dir']
+    
+    labels_map = {}
+    for i, cls in enumerate(cfg['dataset_config']['class_names']):
+        labels_map[i] = cls
+        
 
-    train_dataset = Data_Classifier(train_path, ch, input_size=input_size, augmentation = cfg['dataset_config']['augmentation'])
-    val_dataset = Data_Classifier(val_path, ch, input_size=input_size, augmentation = cfg['dataset_config']['augmentation'])
+    train_dataset = Data_Classifier(train_path, labels_map, ch, input_size=input_size, augmentation = cfg['dataset_config']['augmentation'])
+    val_dataset = Data_Classifier(val_path, labels_map, ch, input_size=input_size, augmentation = cfg['dataset_config']['augmentation'])
     print('Train set size:', len(train_dataset))
     print('Val set size:', len(val_dataset))
 
@@ -130,7 +132,7 @@ def main(cfg):
     }
     
    
-    check_input(dataloaders)
+    check_input(dataloaders, labels_map)
     if cfg['model_config']['model']== 'ResNet50':
         model = ResNet50Classifier(ch, num_class, use_cuda)
     elif cfg['model_config']['model']== 'InceptionV3':
@@ -153,6 +155,7 @@ def main(cfg):
         model.to(device=device)
     else:
         device = "cpu"
+        dtype = torch.FloatTensor
         model.to(device=device)
 
     if cfg['train_config']['optimizer'] == 'Adam':
