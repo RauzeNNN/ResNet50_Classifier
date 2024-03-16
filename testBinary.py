@@ -134,6 +134,7 @@ def main(cfg, model_path):
                   cfg['model_config']['input_size'][0])
     num_class = cfg['model_config']['num_class']
     ch = cfg['model_config']['channel']
+    dropout_rate = cfg['model_config']["dropout_rate"][0]
 
     # train configs
     use_cuda = cfg['train_config']['use_cuda']
@@ -151,7 +152,7 @@ def main(cfg, model_path):
     for i, cls in enumerate(class_list):
         labels_map[i] = cls
 
-    model = ResNet50Classifier(ch, num_class, use_cuda)
+    model = ResNet50Classifier(ch, num_class, use_cuda, dropout_rate)
     model.load_state_dict(torch.load(model_path))
     model.eval()
     if use_cuda:
