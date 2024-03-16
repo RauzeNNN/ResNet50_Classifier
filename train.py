@@ -91,6 +91,7 @@ def main(cfg):
                   cfg['model_config']['input_size'][1])
     num_class = cfg['model_config']['num_class']
     ch = cfg['model_config']['channel']
+    dropout_rate = cfg['model_config']["dropout_rate"][0]
 
     # train configs
     batch_size = cfg['train_config']['batch_size'][0]
@@ -134,11 +135,11 @@ def main(cfg):
    
     check_input(dataloaders, labels_map)
     if cfg['model_config']['model']== 'ResNet50':
-        model = ResNet50Classifier(ch, num_class, use_cuda)
+        model = ResNet50Classifier(ch, num_class, use_cuda, dropout_rate)
     elif cfg['model_config']['model']== 'InceptionV3':
-        model = InceptionV3(ch, num_class, use_cuda)
+        model = InceptionV3(ch, num_class, use_cuda, dropout_rate)
     elif cfg['model_config']['model']== 'DenseNet121':
-        model = DenseNet121(ch, num_class, use_cuda)
+        model = DenseNet121(ch, num_class, use_cuda, dropout_rate)
     else:
         print('TODO')
 

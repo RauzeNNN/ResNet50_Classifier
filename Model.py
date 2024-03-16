@@ -10,6 +10,7 @@ class ResNet50Classifier(nn.Module):
             ch,
             num_class,
             use_cuda,
+            dropout_rate,
     ):
         super(ResNet50Classifier, self).__init__()
         self.ch = ch
@@ -29,7 +30,7 @@ class ResNet50Classifier(nn.Module):
         self.hidden1 = nn.Linear(1000, 300)
         nn.init.kaiming_normal_(self.hidden1.weight)
         self.bn1 = nn.BatchNorm1d(300)
-        self.dropout1 = torch.nn.Dropout(p=0.5)
+        self.dropout1 = torch.nn.Dropout(p=dropout_rate)
         self.final_layer = nn.Linear(300, num_class)
         nn.init.kaiming_normal_(self.final_layer.weight)
         self.softmax = nn.Softmax(dim=1)
@@ -50,6 +51,7 @@ class InceptionV3(nn.Module):
             ch,
             num_class,
             use_cuda,
+            dropout_rate,
     ):
         super(InceptionV3, self).__init__()
         self.ch = ch
@@ -68,7 +70,7 @@ class InceptionV3(nn.Module):
         self.hidden1 = nn.Linear(1000, 300)
         nn.init.kaiming_normal_(self.hidden1.weight)
         self.bn1 = nn.BatchNorm1d(300)
-        self.dropout1 = torch.nn.Dropout(p=0.5)
+        self.dropout1 = torch.nn.Dropout(p=dropout_rate)
         self.final_layer = nn.Linear(300, num_class)
         nn.init.kaiming_normal_(self.final_layer.weight)
         self.softmax = nn.Softmax(dim=1)
@@ -88,6 +90,7 @@ class DenseNet121(nn.Module):
             ch,
             num_class,
             use_cuda,
+            dropout_rate,
     ):
         super(DenseNet121, self).__init__()
         self.ch = ch
@@ -107,7 +110,7 @@ class DenseNet121(nn.Module):
         self.hidden1 = nn.Linear(1000, 300)
         nn.init.kaiming_normal_(self.hidden1.weight)
         self.bn1 = nn.BatchNorm1d(300)
-        self.dropout1 = torch.nn.Dropout(p=0.5)
+        self.dropout1 = torch.nn.Dropout(p=dropout_rate)
         self.final_layer = nn.Linear(300, num_class)
         nn.init.kaiming_normal_(self.final_layer.weight)
         self.softmax = nn.Softmax(dim=1)
