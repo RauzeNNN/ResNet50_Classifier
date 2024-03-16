@@ -11,8 +11,6 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import argparse
 import yaml
-from scipy.ndimage.interpolation import zoom
-
 # from sklearn.metrics import auc
 
 image_ext = ['.bmp', '.png', '.jpg', '.tiff', '.tif', '.PNG']
@@ -45,45 +43,17 @@ def get_image_list(path):
     return natural_sort(image_names)
 
 
-# def pre_process(img):
-#     img = np.float32(img)
-#     img = (img - img.mean()) / img.std()
-#     # HW to CHW (for gray scale)
-#     img = np.expand_dims(img, 0)
-#     img = np.expand_dims(img, 0)
+def pre_process(img):
+    img = np.float32(img)
+    img = (img - img.mean()) / img.std()
+    # HW to CHW (for gray scale)
+    img = np.expand_dims(img, 0)
+    img = np.expand_dims(img, 0)
 
-#     # HWC to CHW, BGR to RGB (for three channel)
-#     # img = img.transpose((2, 0, 1))[::-1]
-#     img = torch.as_tensor(img)
-#     return img
-
-def pre_process(img_org, img_size ):
-    if len(img_org.shape)==2:
-        imgHeight, imgWidth = img_org.shape
-        if imgHeight != img_size[0] or imgWidth != img_size[1]:
-            img_input = zoom(img_org, (img_size[0] / imgHeight, img_size[1] / imgWidth), order=3)  
-        else:
-            img_input = img_org
-    else:
-        imgHeight, imgWidth, c = img_org.shape
-        if imgHeight != img_size[0] or imgWidth != img_size[1]:
-            img_input = zoom(img_org, (img_size[0] / imgHeight, img_size[1] / imgWidth, 1), order=3)  
-    #z normalizization
-    mean3d = np.mean(img_input, axis=(0,1))
-    std3d = np.std(img_input, axis=(0,1))
-    img_input = (img_input-mean3d)/std3d
-    if len(img_input.shape)==2:
-        img_input = torch.from_numpy(img_input).unsqueeze(0).unsqueeze(0).float().cuda()
-    else:
-        img_input = img_input.transpose((2, 0, 1))[::-1]
-        img_input = torch.from_numpy(img_input.astype(np.float32)).unsqueeze(0).float().cuda()
-    
-    # # Transform to tensor
-    # img_input = TF.to_tensor(img_input)
-    # # Normalize
-    # img_input = TF.normalize(img_input,[0.5], [0.5]).unsqueeze(0).cuda()
-
-    return img_input
+    # HWC to CHW, BGR to RGB (for three channel)
+    # img = img.transpose((2, 0, 1))[::-1]
+    img = torch.as_tensor(img)
+    return img
 
 class Results():
     def __init__(self, labels_map, threshold=0.5):
@@ -160,8 +130,8 @@ class Results():
 
 def main(cfg, model_path):
     # model configs
-    input_size = (cfg['model_config']['input_size'][0],
-                  cfg['model_config']['input_size'][1])
+    input_size = (cfg['model_config']['input_size'][1],
+                  cfg['model_config']['input_size'][0])
     num_class = cfg['model_config']['num_class']
     ch = cfg['model_config']['channel']
 
@@ -198,9 +168,10 @@ def main(cfg, model_path):
     for img_path in tqdm(image_list):
         image_name = img_path.split('/')[-1]
 
-        img_org = cv2.imread(img_path,0)
+        img_org = cv2.resize(cv2.imread(
+            img_path,0), input_size)
 
-        img = pre_process(img_org, input_size)
+        img = pre_process(img_org)
         logits = model(img.to(device))
         softmaxed_scores = model.softmax(logits)
 
@@ -233,7 +204,7 @@ def main(cfg, model_path):
 if __name__ == "__main__":
     args = parse_args()
     config_path = args.config
-    model_path = '/kuacc/users/ocaki13/hpc_run/workfolder/classifierExp1Sgd/models/epoch14.pt'
+    model_path = args.model_path
     # config_path = 'config.yml'
     with open(config_path, "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
