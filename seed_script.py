@@ -18,7 +18,7 @@ def train_one_seed(cfg, seed):
     cfg['train_config']['seed'] = seed
 
     train.main(cfg)
-    best_path = os.path.join(RESULT_PATH + "/models",sorted(os.listdir(RESULT_PATH + "/models"))[-2])
+    best_path = os.path.join(RESULT_PATH + "/models", sorted(os.listdir(RESULT_PATH + "/models"))[-2])
     testBinary.main(cfg, best_path)
 
 
@@ -30,14 +30,15 @@ def save_results(cfg, seed):
     global DELETE_NON_BEST_MODELS
 
     cfg['train_config']['seed'] = seed
-    
+
     if DELETE_IMAGES:
         shutil.rmtree(RESULT_PATH + "/images")
     
     if DELETE_NON_BEST_MODELS:
         os.remove(RESULT_PATH + "/models/last_epoch.pt")
         dirpaths = os.listdir(RESULT_PATH + "/models")
-        for i in sorted(dirpaths)[:-1]:
+        to_be_removed = sorted(dirpaths)[:-1]
+        for i in to_be_removed:
             os.remove(RESULT_PATH + "/models/" + i)
     
     seeddir = OUTPUT_PATH + "/seed" + str(seed)
