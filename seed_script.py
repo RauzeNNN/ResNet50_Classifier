@@ -6,41 +6,49 @@ import train
 import testBinary
 
 #absolute paths suggested especially for wsl.
-global CONFIG_PATH = "/home/rauzen/Projects/eye_project/classifier/config.yml"
-global OUTPUT_PATH = "/mnt/c/Users/mbomt/Downloads/deneme"
-global RESULT_PATH = "/home/rauzen/Projects/eye_project/classifier/results"
-global SEED_LIST = [35, 1063]
-global DELETE_IMAGES = True
-global DELETE_NON_BEST_MODELS = True
+CONFIG_PATH = "/home/rauzen/Projects/eye_project/classifier/config.yml"
+OUTPUT_PATH = "/mnt/c/Users/mbomt/Downloads/deneme"
+RESULT_PATH = "/home/rauzen/Projects/eye_project/classifier/results"
+SEED_LIST = [35, 1063]
+DELETE_IMAGES = True
+DELETE_NON_BEST_MODELS = True
 
-def train_one_seed(cfg, seed)
+def train_one_seed(cfg, seed):
+    global RESULT_PATH
     cfg['train_config']['seed'] = seed
+
     train.main(cfg)
-    best_path = sorted(os.listdir(RESULT_PATH + "/models"))[-2]
-    print("testing: "+ best_path)
+    best_path = os.path.join(RESULT_PATH + "/models",sorted(os.listdir(RESULT_PATH + "/models"))[-2])
     testBinary.main(cfg, best_path)
 
 
 def save_results(cfg, seed):
+    global OUTPUT_PATH
+    global RESULT_PATH
+    global SEED_LIST
+    global DELETE_IMAGES
+    global DELETE_NON_BEST_MODELS
+
     cfg['train_config']['seed'] = seed
+    
     if DELETE_IMAGES:
-        os.rmdir(RESULT_PATH + "/images")
+        shutil.rmtree(RESULT_PATH + "/images")
     
     if DELETE_NON_BEST_MODELS:
         os.remove(RESULT_PATH + "/models/last_epoch.pt")
         dirpaths = os.listdir(RESULT_PATH + "/models")
         for i in sorted(dirpaths)[:-1]:
-            os.remove(i)
+            os.remove(RESULT_PATH + "/models/" + i)
     
-    seeddir = OUTPUT_PATH + "/seed" + seed
-    os.makedir(seeddir)
+    seeddir = OUTPUT_PATH + "/seed" + str(seed)
+    os.mkdir(seeddir)
     shutil.copytree(RESULT_PATH, seeddir + "/results")
-    os.copy(RESULT_PATH + "/../batch_sample_train.png", seeddir)
+    shutil.copy2(RESULT_PATH + "/../batch_sample_train.png", seeddir)
 
     os.remove(RESULT_PATH + "/../batch_sample_train.png")
-    os.rmdir(RESULT_PATH)
+    shutil.rmtree(RESULT_PATH)
 
-    f = file(os.path.join(RESULT_PATH, "used_config.yml"), "w")
+    f = open(os.path.join(seeddir, "used_config.yml"), "w")
     yaml.dump(cfg, f)
 
     
@@ -50,7 +58,7 @@ if __name__ == "__main__":
     with open(CONFIG_PATH, "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
 
-    for i in SEED_LIST:
+    for seed in SEED_LIST:
         train_one_seed(cfg, seed)
         save_results(cfg, seed)
     
