@@ -13,12 +13,33 @@ SEED_LIST = [35, 1063]
 DELETE_IMAGES = True
 DELETE_NON_BEST_MODELS = True
 
+def sort_filenames(l):
+    temp = l[:]
+    last_flag = False
+    if "last_epoch.pt" in temp:
+        temp.remove("last_epoch.pt")
+        last_flag = True
+
+    #extraction
+    for i in range(len(temp)):
+        temp[i] = int(temp[i][5:-3])
+
+    temp.sort()
+
+    #packing
+    for i in range(len(temp)):
+        temp[i] = "epoch" + str(temp[i]) + ".pt"
+
+    if last_flag:
+        temp.append("last_epoch.pt")
+    return temp
+
 def train_one_seed(cfg, seed):
     global RESULT_PATH
     cfg['train_config']['seed'] = seed
 
     train.main(cfg)
-    best_path = os.path.join(RESULT_PATH + "/models", sorted(os.listdir(RESULT_PATH + "/models"))[-2])
+    best_path = os.path.join(RESULT_PATH + "/models", sort_filenames(os.listdir(RESULT_PATH + "/models"))[-2])
     testBinary.main(cfg, best_path)
 
 
@@ -37,7 +58,7 @@ def save_results(cfg, seed):
     if DELETE_NON_BEST_MODELS:
         os.remove(RESULT_PATH + "/models/last_epoch.pt")
         dirpaths = os.listdir(RESULT_PATH + "/models")
-        to_be_removed = sorted(dirpaths)[:-1]
+        to_be_removed = sort_filenames(dirpaths)[:-1]
         for i in to_be_removed:
             os.remove(RESULT_PATH + "/models/" + i)
     
