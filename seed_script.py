@@ -9,7 +9,7 @@ import testBinary
 CONFIG_PATH = "/home/rauzen/Projects/eye_project/classifier/config.yml"
 OUTPUT_PATH = "/mnt/c/Users/mbomt/Downloads/deneme"
 RESULT_PATH = "/home/rauzen/Projects/eye_project/classifier/results"
-SEED_LIST = [35, 1063]
+SEED_LIST = [35, 1063, 306, 629, 1940, 288, 399, 1215, 187, 1636]
 DELETE_IMAGES = True
 DELETE_NON_BEST_MODELS = True
 
