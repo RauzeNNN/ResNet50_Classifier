@@ -3,7 +3,7 @@ model_config:
   initial_filter_size: [32]
   kernel: [3]
   dropout_rate: [0.5]
-  input_size: [400, 640] #h, w
+  input_size: [800, 800] #h, w
   channel: 1
   num_class: 2
   attention: False 
@@ -11,13 +11,13 @@ train_config:
   loss: w_ce
   accuracy: dice_score
   optimizer: Adam
-  lr_rate: [0.0005]
-  weight_decay: [0.0001]
+  lr_rate: [0.00005]
+  weight_decay: [0.00016]
   batch_size: [4]
   epochs: 200
   num_workers: 20
   use_cuda: True
-  seed: 288
+  seed: 1636
 dataset_config:
   train_path: '../3folddatasett_copy/fold1/train/'
   val_path: '../3folddatasett_copy/fold1/val/'
