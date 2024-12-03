@@ -4,7 +4,7 @@ from Trainer import Trainer
 import random
 import os
 import numpy as np
-from Model import ResNet50Classifier, InceptionV3, DenseNet121
+from Model import ResNet50Classifier, MobileNetClassifier
 from torch import optim
 from torch.utils.data import DataLoader
 import argparse
@@ -136,10 +136,8 @@ def main(cfg):
     check_input(dataloaders, labels_map)
     if cfg['model_config']['model']== 'ResNet50':
         model = ResNet50Classifier(ch, num_class, use_cuda, dropout_rate)
-    elif cfg['model_config']['model']== 'InceptionV3':
-        model = InceptionV3(ch, num_class, use_cuda, dropout_rate)
-    elif cfg['model_config']['model']== 'DenseNet121':
-        model = DenseNet121(ch, num_class, use_cuda, dropout_rate)
+    elif cfg['model_config']['model']== 'MobileNetV3Small':
+        model = MobileNetClassifier(ch, num_class, use_cuda, dropout_rate)
     else:
         print('TODO')
 

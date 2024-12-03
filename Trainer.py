@@ -146,6 +146,8 @@ class Trainer():
                         os.makedirs(save_dir, exist_ok=True)
                         torch.save(self.best_model, os.path.join(
                             save_dir, model_name))
+                        torch.save(self.best_model, os.path.join(
+                            save_dir, 'best.pt'))
                 else:
                     self.train_loss_list.append(epoch_loss)
                     print("Train loss on epoch %i: %f" % (epoch, epoch_loss))

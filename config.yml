@@ -1,5 +1,5 @@
 model_config:
-  model: ResNet50 #ResNet50, InceptionV3, DenseNet121
+  model: MobileNetV3Small #ResNet50, MobileNetV3Small
   initial_filter_size: [32]
   kernel: [3]
   dropout_rate: [0.5]
@@ -12,19 +12,19 @@ train_config:
   accuracy: dice_score
   optimizer: Adam
   lr_rate: [0.00005]
-  weight_decay: [0.00016]
+  weight_decay: [0.0002]
   batch_size: [4]
-  epochs: 200
+  epochs: 10
   num_workers: 20
   use_cuda: True
   seed: 1636
 dataset_config:
-  train_path: '../3folddatasett_copy/fold1/train/'
-  val_path: '../3folddatasett_copy/fold1/val/'
-  test_path: '../3folddatasett_copy/fold1/test/'
-  augmentation: False
+  train_path: '/home/ocaki13/projects/ultrasound/processed_data/ultrasoundSegmentationDatasetv2_resized_won_cls/fold1/train/'
+  val_path: '/home/ocaki13/projects/ultrasound/processed_data/ultrasoundSegmentationDatasetv2_resized_won_cls//fold1/val/'
+  test_path: '/home/ocaki13/projects/ultrasound/processed_data/ultrasoundSegmentationDatasetv2_resized_won_cls//fold1/test/'
+  augmentation: True
   aug_rate: [0]
-  save_dir: results
+  save_dir: results4
   class_names: ['control','RD']
 resume:
   flag: False

@@ -10,8 +10,20 @@ import torchvision.transforms.functional as TF
 from scipy import ndimage
 from scipy.ndimage.interpolation import zoom
 import glob
-image_ext = ['.bmp', '.png', '.jpg', '.tiff', '.tif', '.PNG']
+import torchio as tio
 
+image_ext = ['.jpg', '.jpeg', '.webp', '.bmp', '.png', '.tif', '.PNG', '.tiff']
+
+def RadiologyAugmentationTIO(image, transforms_dict):    
+    subject = tio.Subject(
+        image=tio.ScalarImage(tensor=np.expand_dims(image,(0,-1))),  # Add channel and batch dim
+    )  
+    # Apply augmentations
+    transform = tio.OneOf(transforms_dict)
+    transformed_subject = transform(subject)
+    
+    transformed_image = transformed_subject["image"].data.numpy()[0,:,:,0]
+    return transformed_image
 
 def random_rot_flip(image):
     k = np.random.randint(0, 4)
@@ -38,16 +50,25 @@ class Data_Classifier(Dataset):
         print('Class list:')
         print(self.class_list)
         self.image_list, self.label_list = self.get_data(data_path)
-
-            
+        self.Counter = 0
+        # Define augmentation pipeline IMGAUG.
+        self.transforms_dict = {
+            tio.transforms.RandomAffine(scales=(0.9, 1.2), degrees=40): 0.1,
+            tio.transforms.RandomElasticDeformation(num_control_points=5, max_displacement=20, locked_borders=1): 0.1,
+            tio.transforms.RandomAnisotropy(axes=(0, 1), downsampling=(2, 4)): 0.1,
+            tio.transforms.RandomBlur(): 0.1,
+            tio.transforms.RandomGhosting(): 0.1,
+            tio.transforms.RandomSpike(num_spikes = 1, intensity= (1, 2)): 0.1,
+            tio.transforms.RandomBiasField(coefficients = 0.2, order= 3): 0.1,
+            tio.RandomGamma(log_gamma=0.1): 0.1,
+        }
         
-
     def transform_mask(self, image):
         if self.augmentation == True:
             if random.random() > 0.5:
-                image = random_rot_flip(image)
-            elif random.random() > 0.5:
-                image = random_rotate(image)
+                image = RadiologyAugmentationTIO(image, self.transforms_dict)
+                self.Counter += 1
+                cv2.imwrite(os.path.join('deneme/','torchio'+str(self.Counter)+'.png'),image)
 
         if len(image.shape)==2:
             h, w = image.shape

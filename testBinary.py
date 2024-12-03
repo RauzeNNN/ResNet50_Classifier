@@ -4,7 +4,7 @@ import os
 from tqdm import tqdm
 import re
 import torch
-from Model import ResNet50Classifier
+from Model import ResNet50Classifier, MobileNetClassifier
 import seaborn as sns
 import cv2
 from tqdm import tqdm
@@ -66,6 +66,7 @@ class Results():
         self.res_dict = {}
         self.prob_negative = []
         self.prob_positive = []
+        self.res_dict = {}
         for cls in labels_map:
             self.res_dict[cls] = {'tp':0, 'fp':0, 'tn':0, 'fn':0}
 
@@ -98,13 +99,12 @@ class Results():
 
     def save_and_print(self, path):
         epsilon = 1e-9
-        recall = self.tp / (self.tp + self.fn+epsilon)
-        sensivity = self.tp / (self.tp + self.fn+epsilon)
-        specificity = self.tn / (self.tn + self.fp+epsilon)
-        print(self.tp, self.fp)
-        precision = self.tp / (self.tp + self.fp+epsilon)
-        f1 = 2 * precision * recall / (precision + recall)
-        accuracy = (self.tp + self.tn) / (self.tp + self.tn + self.fp + self.fn)
+        recall = round(self.tp / (self.tp + self.fn+epsilon)*100, 2)
+        sensivity = round(self.tp / (self.tp + self.fn+epsilon)*100, 2)
+        specificity = round(self.tn / (self.tn + self.fp+epsilon)*100, 2)
+        precision = round(self.tp / (self.tp + self.fp+epsilon)*100, 2)
+        f1 = round(2 * precision * recall / (precision + recall), 2)
+        accuracy = round((self.tp + self.tn) / (self.tp + self.tn + self.fp + self.fn)*100, 2)
         result_path = os.path.join(path,
                             'results_threshold_{}.txt'.format(self.threshold))
         with open(result_path, 'w') as f:
@@ -118,16 +118,21 @@ class Results():
             f.write('specifity: {}\n'.format(specificity))
             f.write('sensivity: {}\n'.format(sensivity))
             f.write('accuracy: {}\n'.format(accuracy))
+            
+        self.resultsDict = {'accuracy':accuracy,'precision':precision,'recall':recall, 'f1':f1}
 
-        sns.displot(self.prob_negative, hist=False, rug=True,
-                    color='green', label=self.labels_map[0], diag_kind="kde")
-        sns.displot(self.prob_positive, hist=False, rug=True,
-                    color='red', label=self.labels_map[1], diag_kind="kde")
+        sns.kdeplot(self.prob_negative, 
+                    color='green', label=self.labels_map[0])
+        sns.kdeplot(self.prob_positive,
+                    color='red', label=self.labels_map[1])
         plt.xlabel('diagnosis confidence')
         plt.legend()
         plt.savefig(os.path.join(path,
                             'prob_dist.png'.format(self.threshold)))
 
+    def getResults(self):
+        return self.resultsDict
+    
 def main(cfg, model_path):
     # model configs
     input_size = (cfg['model_config']['input_size'][1],
@@ -152,7 +157,12 @@ def main(cfg, model_path):
     for i, cls in enumerate(class_list):
         labels_map[i] = cls
 
-    model = ResNet50Classifier(ch, num_class, use_cuda, dropout_rate)
+    if cfg['model_config']['model']== 'ResNet50':
+        model = ResNet50Classifier(ch, num_class, use_cuda, dropout_rate)
+    elif cfg['model_config']['model']== 'MobileNetV3Small':
+        model = MobileNetClassifier(ch, num_class, use_cuda, dropout_rate)
+    else:
+        print('TODO')
     model.load_state_dict(torch.load(model_path))
     model.eval()
     if use_cuda:
@@ -188,18 +198,22 @@ def main(cfg, model_path):
             plt.imshow(img_org, cmap="gray")
             plt.savefig(os.path.join(save_dir,image_name))
             plt.clf()
+            plt.close()  # Close the current figure
         else:
             plt.title('{}, {}'.format(gt_label, predict_name), color='red')
             plt.axis("off")
             plt.imshow(img_org, cmap="gray")
             plt.savefig(os.path.join(save_dir,image_name))
             plt.clf()
+            plt.close()  # Close the current figure
     try:
         results.save_and_print(output_save_dir)
     except:
         print("save and print did not worked")
         
     print('Accuracy:', correct/len(image_list))
+    resultsDict = results.getResults()
+    return resultsDict
          
 
 if __name__ == "__main__":
@@ -209,4 +223,4 @@ if __name__ == "__main__":
     # config_path = 'config.yml'
     with open(config_path, "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
-    main(cfg, model_path)
+    resultsDict = main(cfg, model_path)

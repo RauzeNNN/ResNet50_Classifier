@@ -4,86 +4,52 @@ import numpy as np
 import yaml
 import train
 import testBinary
+import glob
+import pandas as pd
 
-#absolute paths suggested especially for wsl.
-CONFIG_PATH = "/kuacc/users/mharmanli21/eye_classification/ResNet50_Classifier/config.yml"
-OUTPUT_PATH = "/kuacc/users/mharmanli21/eye_classification/seed_outputs"
-RESULT_PATH = "/kuacc/users/mharmanli21/eye_classification/results_temp"
-BATCHSAMPLE = "/kuacc/users/mharmanli21/batch_sample_train.png"
-SEED_LIST = [35, 1063, 306, 629, 1940, 288, 399, 1215, 187, 1636]
-DELETE_IMAGES = True
-DELETE_NON_BEST_MODELS = True
-
-def sort_filenames(l):
-    temp = l[:]
-    last_flag = False
-    if "last_epoch.pt" in temp:
-        temp.remove("last_epoch.pt")
-        last_flag = True
-
-    #extraction
-    for i in range(len(temp)):
-        temp[i] = int(temp[i][5:-3])
-
-    temp.sort()
-
-    #packing
-    for i in range(len(temp)):
-        temp[i] = "epoch" + str(temp[i]) + ".pt"
-
-    if last_flag:
-        temp.append("last_epoch.pt")
-    return temp
-
-def train_one_seed(cfg, seed):
-    global RESULT_PATH
-    cfg['train_config']['seed'] = seed
-
-    train.main(cfg)
-    best_path = os.path.join(RESULT_PATH + "/models", sort_filenames(os.listdir(RESULT_PATH + "/models"))[-2])
-    testBinary.main(cfg, best_path)
+CONFIG_PATH = "/home/ocaki13/ResNet50_Classifier/config.yml"
+BATCHSAMPLE = "/home/ocaki13/ResNet50_Classifier/batch_sample_train.png"
 
 
-def save_results(cfg, seed):
-    global OUTPUT_PATH
-    global RESULT_PATH
-    global SEED_LIST
-    global DELETE_IMAGES
-    global DELETE_NON_BEST_MODELS
+def seedTrain(cfg, seedList, deleteImages=True, deleteNonBestModels=True):
 
-    cfg['train_config']['seed'] = seed
 
-    if DELETE_IMAGES:
-        shutil.rmtree(RESULT_PATH + "/images")
-    
-    if DELETE_NON_BEST_MODELS:
-        os.remove(RESULT_PATH + "/models/last_epoch.pt")
-        dirpaths = os.listdir(RESULT_PATH + "/models")
-        to_be_removed = sort_filenames(dirpaths)[:-1]
-        for i in to_be_removed:
-            os.remove(RESULT_PATH + "/models/" + i)
-    
-    seeddir = OUTPUT_PATH + "/seed" + str(seed)
-    os.mkdir(seeddir)
-    shutil.copytree(RESULT_PATH, seeddir + "/results")
-    shutil.copy2(BATCHSAMPLE, seeddir)
+    resultsPath =  cfg['dataset_config']['save_dir']
+    if not os.path.exists(resultsPath):
+        os.mkdir(resultsPath)
 
-    os.remove(BATCHSAMPLE)
-    shutil.rmtree(RESULT_PATH)
+    resultsDict = {}
+    for seed in seedList:
+        currentSaveDir = os.path.join(resultsPath, 'seed_'+str(seed))
+        cfg['dataset_config']['save_dir'] = currentSaveDir
+        cfg['train_config']['seed'] = seed
+        best_path = os.path.join(currentSaveDir, 'models/best.pt')
+        train.main(cfg)
+        currentResults = testBinary.main(cfg, best_path)  
+        resultsDict[seed] = currentResults
+        if deleteImages:
+            shutil.rmtree(os.path.join(currentSaveDir ,"images"))
 
-    f = open(os.path.join(seeddir, "used_config.yml"), "w")
-    yaml.dump(cfg, f)
-    f.close()
+        if deleteNonBestModels:
+            folder_path = os.path.join(currentSaveDir ,"models")
+            files_to_delete = glob.glob(os.path.join(folder_path, "*epoch*"))
+            for file_path in files_to_delete:
+                try:
+                    os.remove(file_path)  # Delete the file
+                except Exception as e:
+                    print(f"Error deleting {file_path}: {e}")
+                
+            
 
-    
+    # Convert the dictionary of dictionaries into a DataFrame
+    results_df = pd.DataFrame.from_dict(resultsDict, orient='index')
+
+    # Save the DataFrame to a CSV file
+    results_df.to_csv(os.path.join(resultsPath,"results.csv"), index_label="Seed")
 
 if __name__ == "__main__":
-    # config_path = 'config.yml'
+    #absolute paths suggested especially for wsl.
     with open(CONFIG_PATH, "r") as ymlfile:
         cfg = yaml.safe_load(ymlfile)
-
-    for seed in SEED_LIST:
-        train_one_seed(cfg, seed)
-        save_results(cfg, seed)
-    
-    
+    seedList = [35, 1063, 306]
+    seedTrain(cfg, seedList)
