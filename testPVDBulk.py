@@ -3,7 +3,7 @@ import os
 from tqdm import tqdm
 import re
 import torch
-from Model import ResNet50Classifier
+from Model import ResNet50Classifier, MobileNetClassifier
 import seaborn as sns
 import cv2
 from tqdm import tqdm
@@ -16,6 +16,7 @@ image_ext = ['.bmp', '.png', '.jpg', '.tiff', '.tif', '.PNG']
 CH=1
 NUM_CLASS=2
 USE_CUDA=True
+DROPOUT_RATE = 0.5
 
 def parse_args():
     ap = argparse.ArgumentParser()
@@ -40,7 +41,8 @@ def get_image_list(path):
         for filename in file_name_list:
             apath = os.path.join(maindir, filename)
             ext = os.path.splitext(apath)[1]
-            if ext in image_ext and 'PVD' in filename:
+            #if ext in image_ext and 'PVD' in filename:
+            if ext in image_ext:
                 image_names.append(apath)
     return natural_sort(image_names)
 
@@ -68,13 +70,16 @@ def pre_process(img):
     return img
 
 
-def testPVDBulk(current_model, image_list, class_list, save_dir):
+def testPVDBulk(current_model, image_list, class_list, model_type, save_dir):
     #create save_Dir for current seed
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     
+    if model_type== 'ResNet50':
+        model = ResNet50Classifier(CH, NUM_CLASS, USE_CUDA, DROPOUT_RATE)
+    elif model_type== 'MobileNetV3Small':
+        model = MobileNetClassifier(CH, NUM_CLASS, USE_CUDA, DROPOUT_RATE)
 
-    model = ResNet50Classifier(CH, NUM_CLASS, USE_CUDA)
     model.load_state_dict(torch.load(current_model))
     model.eval()
     if USE_CUDA:
@@ -87,7 +92,9 @@ def testPVDBulk(current_model, image_list, class_list, save_dir):
         model.to(device="cpu")
 
     correct = 0
-    times = 0
+    time_preprocess = 0
+    time_inference = 0
+    time_postprocess = 0
     tp = 0
     tn = 0
     fp = 0
@@ -98,11 +105,16 @@ def testPVDBulk(current_model, image_list, class_list, save_dir):
         img_org = cv2.imread(img_path,0)
         s = time.time()
         img = pre_process(img_org)
-        logits = model(img.to(device))
-        softmaxed_scores = model.softmax(logits)
+        time_preprocess += time.time() - s
 
+        s = time.time()
+        logits = model(img.to(device))
+        time_inference += time.time() - s
+        
+        s = time.time()
+        softmaxed_scores = model.softmax(logits)
         _, predict = torch.max(softmaxed_scores, 1)
-        times += time.time() - s
+        time_postprocess += time.time() - s
 
         predict_name = labels_map[predict.item()]
         gt_label = img_path.split('/')[-2]
@@ -131,14 +143,23 @@ def testPVDBulk(current_model, image_list, class_list, save_dir):
     recall = tp/(tp+fn+epsilon)
     resultsDict = {
         'Accuracy': round(correct/len(image_list),4)*100,
-        'recall:': round(recall,4)*100,
         'precision': round(precision,4)*100,
+        'recall': round(recall,4)*100,
         'f1':round(2 * precision * recall / (precision + recall+epsilon), 4)*100
     }
     
     # Calculate average time per run in milliseconds
-    average_time_ms = (times / len(image_list)) * 1000
+    average_time_ms = (time_preprocess / len(image_list)) * 1000
+    print(f"Average preprocess time: {average_time_ms:.3f} ms")
+    
+    # Calculate average time per run in milliseconds
+    average_time_ms = (time_inference / len(image_list)) * 1000
     print(f"Average inference time: {average_time_ms:.3f} ms")
+   
+    # Calculate average time per run in milliseconds
+    average_time_ms = (time_postprocess / len(image_list)) * 1000
+    print(f"Average postprocess time: {average_time_ms:.3f} ms")
+    
     
     return resultsDict
 
@@ -161,12 +182,12 @@ if __name__ == "__main__":
         
     resultsDict = {}
     for current_model in model_list:
-        current_seed = current_model.split('/')[-4]
-        current_results = testPVDBulk(current_model, test_images, class_list, os.path.join(save_dir,current_seed))
+        current_seed = current_model.split('/')[-3]
+        current_results = testPVDBulk(current_model, test_images, class_list, 'MobileNetV3Small', os.path.join(save_dir,current_seed))
         resultsDict[current_seed] = current_results
 
     # Convert the dictionary of dictionaries into a DataFrame
     results_df = pd.DataFrame.from_dict(resultsDict, orient='index')
 
     # Save the DataFrame to a CSV file
-    results_df.to_csv("results.csv", index_label="Seed")
+    results_df.to_csv(os.path.join(save_dir, "results.csv"), index_label="Seed")

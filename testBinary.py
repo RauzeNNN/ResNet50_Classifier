@@ -103,7 +103,7 @@ class Results():
         sensivity = round(self.tp / (self.tp + self.fn+epsilon)*100, 2)
         specificity = round(self.tn / (self.tn + self.fp+epsilon)*100, 2)
         precision = round(self.tp / (self.tp + self.fp+epsilon)*100, 2)
-        f1 = round(2 * precision * recall / (precision + recall), 2)
+        f1 = round(2 * precision * recall / (precision + recall+epsilon), 2)
         accuracy = round((self.tp + self.tn) / (self.tp + self.tn + self.fp + self.fn)*100, 2)
         result_path = os.path.join(path,
                             'results_threshold_{}.txt'.format(self.threshold))
@@ -206,11 +206,8 @@ def main(cfg, model_path):
             plt.savefig(os.path.join(save_dir,image_name))
             plt.clf()
             plt.close()  # Close the current figure
-    try:
-        results.save_and_print(output_save_dir)
-    except:
-        print("save and print did not worked")
         
+    results.save_and_print(output_save_dir)    
     print('Accuracy:', correct/len(image_list))
     resultsDict = results.getResults()
     return resultsDict
